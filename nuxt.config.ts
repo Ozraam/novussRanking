@@ -11,10 +11,20 @@ export default defineNuxtConfig({
     },
 
     css: [
-        '~/assets/css/global.scss'
+        '~/assets/scss/global.scss'
     ],
 
     supabase: {
         redirect: false
+    },
+
+    vite: {
+        css: {
+            preprocessorOptions: {
+                scss: {
+                    additionalData: '@import "@/assets/scss/colors.scss";'
+                }
+            }
+        }
     }
 })
