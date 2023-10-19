@@ -17,7 +17,7 @@ defineProps({
             Stats
         </h2>
 
-        <ul>
+        <ul class="players-stats">
             <player-stats
                 v-for="player in players"
                 :key="player.id"
@@ -28,3 +28,12 @@ defineProps({
         </ul>
     </section>
 </template>
+
+<style scoped lang="scss">
+.players-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+</style>
