@@ -11,7 +11,7 @@ defineProps({
     <div>
         <h1>Players</h1>
 
-        <ul>
+        <ul class="players">
             <player-info
                 v-for="(player, index) in players"
                 :key="player.id"
@@ -23,8 +23,11 @@ defineProps({
 </template>
 
 <style scoped lang="scss">
-.player {
+.players {
+  margin-top: 10px;
   display: flex;
+  flex-direction: column;
   gap: 10px;
+  width: 100%;
 }
 </style>

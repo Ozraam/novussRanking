@@ -28,6 +28,10 @@ fetchPlayers()
 
 <template>
     <main>
+        <h1>
+            Novuss Ranking
+        </h1>
+
         <players-match-form
             v-if="players"
             :players="players"
@@ -46,3 +50,13 @@ fetchPlayers()
         />
     </main>
 </template>
+
+<style scoped lang="scss">
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+  padding-top: 2em;
+}
+</style>
