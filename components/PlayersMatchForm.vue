@@ -1,53 +1,21 @@
 <script setup lang="ts">
-const props = defineProps({
+defineProps({
     players: {
         type: Array as PropType<{id: number, name: string, elo:number}[] | null>,
         required: true
+    },
+    processing: {
+        type: Boolean,
+        required: true
     }
 })
-
-const sp = useSupabaseClient()
-
-const emit = defineEmits(['update'])
+const emit = defineEmits(['update', 'process-match'])
 
 const winner = ref(null)
 const losser = ref(null)
 
-const processing = ref(false)
-
-async function processMatch() {
-    if (!winner.value || !losser.value) {
-        return
-    }
-
-    processing.value = true
-
-    // Elo calculation
-    // https://metinmediamath.wordpress.com/2013/11/27/how-to-calculate-the-elo-rating-including-example/
-    const winnerElo = props.players?.find(p => p.id === winner.value)?.elo ?? 0
-    const losserElo = props.players?.find(p => p.id === losser.value)?.elo ?? 0
-
-    const winnerExpectedScore = 1 / (1 + 10 ** ((losserElo - winnerElo) / 400))
-    const losserExpectedScore = 1 / (1 + 10 ** ((winnerElo - losserElo) / 400))
-
-    const winnerNewElo = winnerElo + 32 * (1 - winnerExpectedScore)
-    const losserNewElo = losserElo + 32 * (0 - losserExpectedScore)
-
-    // Update players
-    await sp.from('player').update(
-        { elo: winnerNewElo.toFixed(0) } as never
-    ).eq('id', winner.value as never)
-
-    await sp.from('player').update(
-        { elo: losserNewElo.toFixed(0) } as never
-    ).eq('id', losser.value as never)
-
-    sp.from('game').insert(
-        { winner: winner.value, losser: losser.value, drunk: false } as never
-    ).then(() => {
-        emit('update')
-        processing.value = false
-    })
+function processMatch() {
+    emit('process-match', { winner, losser })
 }
 </script>
 
