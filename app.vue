@@ -2,6 +2,8 @@
 <script setup lang="ts">
 const sp = useSupabaseClient()
 
+const eloK = 32
+
 const players : Ref<{id: number, name: string, elo:number}[] | null> = ref(null)
 const matchs : Ref<{id: number, winner: number, losser: number, drunk: boolean}[] | null> = ref(null)
 
@@ -41,8 +43,8 @@ async function proccessMatch({ winner, losser } : { winner: Ref<number | null>, 
     const winnerExpectedScore = 1 / (1 + 10 ** ((losserElo - winnerElo) / 400))
     const losserExpectedScore = 1 / (1 + 10 ** ((winnerElo - losserElo) / 400))
 
-    const winnerNewElo = winnerElo + 32 * (1 - winnerExpectedScore)
-    const losserNewElo = losserElo + 32 * (0 - losserExpectedScore)
+    const winnerNewElo = winnerElo + eloK * (1 - winnerExpectedScore)
+    const losserNewElo = losserElo + eloK * (0 - losserExpectedScore)
 
     // Update players
     await sp.from('player').update(
@@ -62,6 +64,43 @@ async function proccessMatch({ winner, losser } : { winner: Ref<number | null>, 
 }
 
 fetchPlayers()
+
+async function recalculateElo() {
+    players.value = players.value!.map(p => ({ ...p, elo: 500 }))
+
+    // for each matchs update elo
+    matchs.value!.forEach((match, index) => {
+        const winnerElo = players.value?.find(p => p.id === match.winner)?.elo ?? 0
+        const losserElo = players.value?.find(p => p.id === match.losser)?.elo ?? 0
+
+        const winnerExpectedScore = 1 / (1 + 10 ** ((losserElo - winnerElo) / 400))
+        const losserExpectedScore = 1 / (1 + 10 ** ((winnerElo - losserElo) / 400))
+
+        const winnerNewElo = winnerElo + eloK * (1 - winnerExpectedScore)
+        const losserNewElo = losserElo + eloK * (0 - losserExpectedScore)
+
+        players.value = players.value!.map((p: any) => {
+            if (p.id === match.winner) {
+                return { ...p, elo: Math.round(winnerNewElo) }
+            }
+
+            if (p.id === match.losser) {
+                return { ...p, elo: Math.round(losserNewElo) }
+            }
+
+            return p
+        })
+
+        console.log(`Match ${index} updated`)
+    })
+
+    // Update players
+    await Promise.all(players.value!.map(p => sp.from('player').update(
+        { elo: p.elo } as never
+    ).eq('id', p.id as never)))
+
+    fetchPlayers()
+}
 </script>
 
 <template>
@@ -88,6 +127,10 @@ fetchPlayers()
             :players="players"
             :matchs="matchs"
         />
+
+        <button @click="recalculateElo">
+            Recalculate elo
+        </button>
     </main>
 </template>
 
