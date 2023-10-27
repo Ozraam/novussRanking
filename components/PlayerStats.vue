@@ -17,7 +17,7 @@ defineProps({
 function getWinRate(matchs: any, player: any, opponent:any) {
     const v = 100 - (
         (
-            matchs.filter((m:any) => m.winner === player.id && m.losser === opponent.id).length / (matchs.filter((m:any) => (m.winner === player.id && m.losser === opponent.id) || (m.winner === opponent.id && m.losser === player.id)).length)
+            matchs.filter((m:any) => m.winner === player.id && (m.losser === opponent.id || opponent.id === -1)).length / (matchs.filter((m:any) => (m.winner === player.id && (m.losser === opponent.id || opponent.id === -1)) || ((m.winner === opponent.id || opponent.id === -1) && m.losser === player.id)).length)
         ) *
         100)
 
@@ -63,6 +63,28 @@ function getWinRate(matchs: any, player: any, opponent:any) {
                         :style="{ '--win-right': getWinRate(matchs, player, opponent) + '%' }"
                     >
                         {{ matchs.filter(m => m.winner === player.id && m.losser === opponent.id).length }}
+                    </div>
+                </div>
+            </li>
+
+            <li class="player-stats-matchs-match">
+                <h5>
+                    Total
+                </h5>
+
+                <div class="victory-bars">
+                    <div
+                        class="loss-bar"
+                        :style="{ '--loss-left': (100 - getWinRate(matchs, player, { id: -1 })) + '%' }"
+                    >
+                        {{ matchs.filter(m => m.losser === player.id).length }}
+                    </div>
+
+                    <div
+                        class="win-bar"
+                        :style="{ '--win-right': getWinRate(matchs, player, { id: -1 }) + '%' }"
+                    >
+                        {{ matchs.filter(m => m.winner === player.id).length }}
                     </div>
                 </div>
             </li>
