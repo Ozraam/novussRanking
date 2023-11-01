@@ -1,7 +1,7 @@
 <script setup lang="ts">
 defineProps({
     player: {
-        type: Object as PropType<{id: number, name: string, elo:number}>,
+        type: Object as PropType<{id: number, name: string, elo:number, numberOfMatchs:number, percentageOfMatchs: number}>,
         required: true
     },
     rank: {

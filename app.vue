@@ -4,7 +4,9 @@ const sp = useSupabaseClient()
 
 const eloK = 32
 
-const players : Ref<{id: number, name: string, elo:number}[] | null> = ref(null)
+const players : Ref<{id: number, name: string, elo:number, numberOfMatchs: number, percentageOfMatchs: number}[] | null> = ref(null)
+const players2 : Ref<{id: number, name: string, elo:number, numberOfMatchs: number, percentageOfMatchs: number}[] | null> = ref(null)
+
 const matchs : Ref<{id: number, winner: number, losser: number, drunk: boolean}[] | null> = ref(null)
 
 async function fetchPlayers() {
@@ -19,6 +21,21 @@ async function fetchPlayers() {
     const { data: matchData, error: matchError } = await sp.from('game').select('*')
 
     matchs.value = matchData
+
+    // Calculate elo based on matchs played
+    players2.value = [...players.value!]
+
+    players2.value = players2.value?.map((pl) => {
+        const p = { ...pl }
+        p.numberOfMatchs = matchs.value?.filter(m => m.winner === p.id || m.losser === p.id).length ?? 0
+        p.percentageOfMatchs = parseFloat(((p.numberOfMatchs / (matchs.value?.length ?? 1)) * 100).toFixed(2))
+        console.log(p.percentageOfMatchs, p.numberOfMatchs, matchs.value?.length)
+        p.elo = Math.round(p.elo * p.percentageOfMatchs / 100)
+
+        return p
+    })
+
+    players2.value?.sort((a, b) => b.elo - a.elo)
 
     if (matchError) {
         console.error(matchError)
@@ -118,8 +135,9 @@ async function recalculateElo() {
         />
 
         <player-list
-            v-if="players"
+            v-if="players && players2"
             :players="players"
+            :players2="players2"
         />
 
         <players-stats
