@@ -16,14 +16,18 @@ defineProps({
     <div>
         <h1>Players</h1>
 
-        <ul class="players">
+        <transition-group
+            name="list"
+            tag="ul"
+            class="players"
+        >
             <player-info
                 v-for="(player, index) in (useEloMatchBased ? players2 : players)"
                 :key="player.id"
                 :player="player"
                 :rank="index + 1"
             />
-        </ul>
+        </transition-group>
 
         <elo-system-switcher
             :use-elo-match-based="useEloMatchBased"
@@ -39,5 +43,9 @@ defineProps({
   flex-direction: column;
   gap: 10px;
   width: 100%;
+}
+
+.list-move {
+  transition: transform 0.5s ease-out;
 }
 </style>

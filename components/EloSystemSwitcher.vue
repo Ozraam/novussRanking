@@ -5,6 +5,8 @@ defineProps({
         required: true
     }
 })
+
+defineEmits(['switch'])
 </script>
 
 <template>
