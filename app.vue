@@ -136,6 +136,20 @@ function calculateEloVariation({ winner, looser } : { winner: number | null, loo
     winnerChangeValue.value = Math.round(winnerNewElo - winnerElo)
     looserChangeValue.value = Math.round(looserNewElo - looserElo)
 }
+
+const channels = sp.channel('custom-update-channel')
+    .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'player' },
+        () => {
+            fetchPlayers()
+        }
+    )
+    .subscribe()
+
+onUnmounted(() => {
+    channels.unsubscribe()
+})
 </script>
 
 <template>
