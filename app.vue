@@ -7,6 +7,9 @@ const eloK = 32
 const players : Ref<{id: number, name: string, elo:number, numberOfMatchs: number, percentageOfMatchs: number}[] | null> = ref(null)
 const players2 : Ref<{id: number, name: string, elo:number, numberOfMatchs: number, percentageOfMatchs: number}[] | null> = ref(null)
 
+const winnerChangeValue : Ref<undefined | number> = ref(undefined)
+const losserChangeValue : Ref<undefined | number> = ref(undefined)
+
 const matchs : Ref<{id: number, winner: number, losser: number, drunk: boolean}[] | null> = ref(null)
 
 async function fetchPlayers() {
@@ -29,7 +32,7 @@ async function fetchPlayers() {
         const p = { ...pl }
         p.numberOfMatchs = matchs.value?.filter(m => m.winner === p.id || m.losser === p.id).length ?? 0
         p.percentageOfMatchs = parseFloat(((p.numberOfMatchs / (matchs.value?.length ?? 1)) * 100).toFixed(2))
-        console.log(p.percentageOfMatchs, p.numberOfMatchs, matchs.value?.length)
+
         p.elo = Math.round(p.elo * p.percentageOfMatchs / 100)
 
         return p
@@ -44,6 +47,16 @@ async function fetchPlayers() {
 
 const processing = ref(false)
 
+function calculateNewElo(winnerElo: number, losserElo: number, eloK: number): { winnerNewElo: number, losserNewElo: number } {
+    const winnerExpectedScore = 1 / (1 + 10 ** ((losserElo - winnerElo) / 400))
+    const losserExpectedScore = 1 / (1 + 10 ** ((winnerElo - losserElo) / 400))
+
+    const winnerNewElo = winnerElo + eloK * (1 - winnerExpectedScore)
+    const losserNewElo = losserElo + eloK * (0 - losserExpectedScore)
+
+    return { winnerNewElo, losserNewElo }
+}
+
 async function proccessMatch({ winner, losser } : { winner: Ref<number | null>, losser: Ref<number | null> }) {
     if (!winner.value || !losser.value) {
         return
@@ -52,16 +65,10 @@ async function proccessMatch({ winner, losser } : { winner: Ref<number | null>, 
     processing.value = true
     await fetchPlayers()
 
-    // Elo calculation
-    // https://metinmediamath.wordpress.com/2013/11/27/how-to-calculate-the-elo-rating-including-example/
     const winnerElo = players.value?.find(p => p.id === winner.value)?.elo ?? 0
     const losserElo = players.value?.find(p => p.id === losser.value)?.elo ?? 0
 
-    const winnerExpectedScore = 1 / (1 + 10 ** ((losserElo - winnerElo) / 400))
-    const losserExpectedScore = 1 / (1 + 10 ** ((winnerElo - losserElo) / 400))
-
-    const winnerNewElo = winnerElo + eloK * (1 - winnerExpectedScore)
-    const losserNewElo = losserElo + eloK * (0 - losserExpectedScore)
+    const { winnerNewElo, losserNewElo } = calculateNewElo(winnerElo, losserElo, eloK)
 
     // Update players
     await sp.from('player').update(
@@ -86,7 +93,7 @@ async function recalculateElo() {
     players.value = players.value!.map(p => ({ ...p, elo: 500 }))
 
     // for each matchs update elo
-    matchs.value!.forEach((match, index) => {
+    matchs.value!.forEach((match) => {
         const winnerElo = players.value?.find(p => p.id === match.winner)?.elo ?? 0
         const losserElo = players.value?.find(p => p.id === match.losser)?.elo ?? 0
 
@@ -107,8 +114,6 @@ async function recalculateElo() {
 
             return p
         })
-
-        console.log(`Match ${index} updated`)
     })
 
     // Update players
@@ -117,6 +122,19 @@ async function recalculateElo() {
     ).eq('id', p.id as never)))
 
     fetchPlayers()
+}
+
+function calculateEloVariation({ winner, losser } : { winner: number | null, losser: number | null }) {
+    if (!winner || !losser) {
+        return
+    }
+    const winnerElo = players.value?.find(p => p.id === winner)?.elo ?? 0
+    const losserElo = players.value?.find(p => p.id === losser)?.elo ?? 0
+
+    const { winnerNewElo, losserNewElo } = calculateNewElo(winnerElo, losserElo, eloK)
+
+    winnerChangeValue.value = Math.round(winnerNewElo - winnerElo)
+    losserChangeValue.value = Math.round(losserNewElo - losserElo)
 }
 </script>
 
@@ -130,8 +148,11 @@ async function recalculateElo() {
             v-if="players"
             :players="players"
             :processing="processing"
+            :losser-change-value="losserChangeValue"
+            :winner-change-value="winnerChangeValue"
             @update="fetchPlayers"
             @process-match="proccessMatch"
+            @player-selected="calculateEloVariation"
         />
 
         <player-list

@@ -7,9 +7,19 @@ defineProps({
     processing: {
         type: Boolean,
         required: true
+    },
+    winnerChangeValue: {
+        type: Number,
+        required: false,
+        default: undefined
+    },
+    losserChangeValue: {
+        type: Number,
+        required: false,
+        default: undefined
     }
 })
-const emit = defineEmits(['update', 'process-match'])
+const emit = defineEmits(['update', 'process-match', 'player-selected'])
 
 const winner = ref(null)
 const losser = ref(null)
@@ -17,6 +27,10 @@ const losser = ref(null)
 function processMatch() {
     emit('process-match', { winner, losser })
 }
+
+watch([winner, losser], ([winnerValue, losserValue]) => {
+    emit('player-selected', { winner: winnerValue, losser: losserValue })
+})
 </script>
 
 <template>
@@ -24,7 +38,15 @@ function processMatch() {
         class="players-match-form"
         @submit.prevent="processMatch"
     >
-        <label for="winner">Winner</label>
+        <label for="winner">
+            Winner
+            <span
+                v-if="winnerChangeValue"
+                class="winner"
+            >
+                +{{ winnerChangeValue }}
+            </span>
+        </label>
 
         <select
             id="winner"
@@ -41,7 +63,15 @@ function processMatch() {
             </option>
         </select>
 
-        <label for="losser">Losser</label>
+        <label for="losser">
+            Losser
+            <span
+                v-if="losserChangeValue"
+                class="looser"
+            >
+                {{ losserChangeValue }}
+            </span>
+        </label>
 
         <select
             id="losser"
@@ -81,6 +111,14 @@ function processMatch() {
     flex-direction: column;
     gap: 10px;
     position: relative;
+}
+
+.looser {
+    color: $wrong;
+}
+
+.winner {
+    color: $valid;
 }
 
 .select-input {
