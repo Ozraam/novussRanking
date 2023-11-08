@@ -5,7 +5,7 @@ defineProps({
         required: true
     },
     matchs: {
-        type: Array as PropType<{id: number, winner: number, losser: number, drunk: boolean}[]>,
+        type: Array as PropType<{id: number, winner: number, looser: number, drunk: boolean}[]>,
         required: true
     }
 })
@@ -23,7 +23,7 @@ defineProps({
                 :key="player.id"
                 :player="player"
                 :players="players"
-                :matchs="matchs.filter(m => m.winner === player.id || m.losser === player.id)"
+                :matchs="matchs.filter(m => m.winner === player.id || m.looser === player.id)"
             />
         </ul>
     </section>

@@ -13,7 +13,7 @@ defineProps({
         required: false,
         default: undefined
     },
-    losserChangeValue: {
+    looserChangeValue: {
         type: Number,
         required: false,
         default: undefined
@@ -22,14 +22,14 @@ defineProps({
 const emit = defineEmits(['update', 'process-match', 'player-selected'])
 
 const winner = ref(null)
-const losser = ref(null)
+const looser = ref(null)
 
 function processMatch() {
-    emit('process-match', { winner, losser })
+    emit('process-match', { winner, looser })
 }
 
-watch([winner, losser], ([winnerValue, losserValue]) => {
-    emit('player-selected', { winner: winnerValue, losser: losserValue })
+watch([winner, looser], ([winnerValue, looserValue]) => {
+    emit('player-selected', { winner: winnerValue, looser: looserValue })
 })
 </script>
 
@@ -63,20 +63,20 @@ watch([winner, losser], ([winnerValue, losserValue]) => {
             </option>
         </select>
 
-        <label for="losser">
-            Losser
+        <label for="looser">
+            looser
             <span
-                v-if="losserChangeValue"
+                v-if="looserChangeValue"
                 class="looser"
             >
-                {{ losserChangeValue }}
+                {{ looserChangeValue }}
             </span>
         </label>
 
         <select
-            id="losser"
-            v-model="losser"
-            name="losser"
+            id="looser"
+            v-model="looser"
+            name="looser"
             class="select-input"
         >
             <option
