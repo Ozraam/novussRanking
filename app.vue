@@ -21,7 +21,7 @@ async function fetchPlayers() {
         console.error(error)
     }
 
-    const { data: matchData, error: matchError } = await sp.from('game').select('*')
+    const { data: matchData, error: matchError } = await sp.from('game').select('*').order('id')
 
     matchs.value = matchData
 
