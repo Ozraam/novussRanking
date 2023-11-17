@@ -32,7 +32,7 @@ defineProps({
     </div>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss">
 .players {
   margin-top: 10px;
   display: flex;
