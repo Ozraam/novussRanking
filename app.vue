@@ -4,13 +4,16 @@ const sp = useSupabaseClient()
 
 const eloK = 32
 
-const players : Ref<{id: number, name: string, elo:number, numberOfMatchs: number, percentageOfMatchs: number}[] | null> = ref(null)
-const players2 : Ref<{id: number, name: string, elo:number, numberOfMatchs: number, percentageOfMatchs: number}[] | null> = ref(null)
+const players : Ref<{id: number, name: string, elo:number, numberOfMatchs: number, percentageOfMatchs: number, eloDisplay: string}[] | null> = ref(null)
+const players2 : Ref<{id: number, name: string, elo:number, numberOfMatchs: number, percentageOfMatchs: number, eloDisplay: string}[] | null> = ref(null)
+const players3 : Ref<{id: number, name: string, elo:number, numberOfMatchs: number, percentageOfMatchs: number, eloDisplay: string}[] | null> = ref(null)
 
 const winnerChangeValue : Ref<undefined | number> = ref(undefined)
 const looserChangeValue : Ref<undefined | number> = ref(undefined)
 
 const matchs : Ref<{id: number, winner: number, looser: number, drunk: boolean}[] | null> = ref(null)
+
+const rankingSystem = computed(() => [players.value, players2.value, players3.value])
 
 async function fetchPlayers() {
     const { data, error } = await sp.from('player').select('*').order('elo', { ascending: false })
@@ -25,20 +28,41 @@ async function fetchPlayers() {
 
     matchs.value = matchData
 
+    players.value?.forEach((p) => {
+        p.eloDisplay = `${p.elo.toFixed(0)}`
+    })
+
     // Calculate elo based on matchs played
     players2.value = [...players.value!]
 
     players2.value = players2.value?.map((pl) => {
         const p = { ...pl }
         p.numberOfMatchs = matchs.value?.filter(m => m.winner === p.id || m.looser === p.id).length ?? 0
-        p.percentageOfMatchs = parseFloat(((p.numberOfMatchs / (matchs.value?.length ?? 1)) * 100).toFixed(2))
+        p.percentageOfMatchs = (p.numberOfMatchs / (matchs.value?.length ?? 1)) * 100
 
         p.elo = Math.round(p.elo * p.percentageOfMatchs / 100)
-
+        p.eloDisplay = `${p.elo.toFixed(0)}`
         return p
     })
 
     players2.value?.sort((a, b) => b.elo - a.elo)
+
+    // Calculate elo based on matchs won
+    players3.value = [...players.value!]
+
+    players3.value = players3.value?.map((pl) => {
+        const p = { ...pl }
+        p.numberOfMatchs = matchs.value?.filter(m => m.winner === p.id || m.looser === p.id).length ?? 1
+        const numberOfMatchsWon = matchs.value?.filter(m => m.winner === p.id).length ?? 0
+        p.percentageOfMatchs = (numberOfMatchsWon / p.numberOfMatchs) * 100
+
+        p.elo = p.percentageOfMatchs
+        p.eloDisplay = `${p.elo.toFixed(1).padEnd(4, '0')}%`
+
+        return p
+    })
+
+    players3.value?.sort((a, b) => b.elo - a.elo)
 
     if (matchError) {
         console.error(matchError)
@@ -170,9 +194,7 @@ onUnmounted(() => {
         />
 
         <player-list
-            v-if="players && players2"
-            :players="players"
-            :players2="players2"
+            :ranking-system="rankingSystem"
         />
 
         <players-stats

@@ -1,12 +1,18 @@
 <script setup lang="ts">
 defineProps({
-    useEloMatchBased: {
-        type: Boolean,
+    selectionPossible: {
+        type: Array<string>,
         required: true
     }
 })
 
-defineEmits(['switch'])
+const selected = ref(0)
+
+const emit = defineEmits(['switch'])
+
+watch(selected, () => {
+    emit('switch', selected.value)
+})
 </script>
 
 <template>
@@ -15,16 +21,31 @@ defineEmits(['switch'])
             for="switcher"
             class="elo-system-switcher__label"
         >
-            Match based elo system
+            Ranking system selector
         </label>
 
         <div class="elo-system-switcher__switch">
-            <input
-                id="switcher"
-                type="checkbox"
-                :checked="useEloMatchBased"
-                @change="event => $emit('switch', (event.target! as HTMLInputElement).checked)"
+            <div
+                v-for="(option, index) in selectionPossible"
+                :key="index"
+                class="elo-system-switcher__switch__option"
             >
+                <input
+                    :id="option"
+                    v-model="selected"
+                    type="radio"
+                    name="switcher"
+                    class="elo-system-switcher__switch__input"
+                    @change="selected = index"
+                >
+
+                <label
+                    :for="option"
+                    class="elo-system-switcher__switch__label"
+                >
+                    {{ option }}
+                </label>
+            </div>
         </div>
     </div>
 </template>
@@ -32,6 +53,7 @@ defineEmits(['switch'])
 <style scoped lang="scss">
 .elo-system-switcher {
     display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 10px;
     width: 100%;
@@ -40,54 +62,46 @@ defineEmits(['switch'])
     &__switch {
         display: flex;
         align-items: center;
-        gap: 10px;
+        justify-content: space-between;
         border: 2px solid $valid;
         border-radius: 20px;
         overflow: hidden;
+        padding: 5px 10px;
+        width: 100%;
+        position: relative;
 
-        input {
-            appearance: none;
-            width: 40px;
-            height: 20px;
+        &__option {
             position: relative;
+            flex: 1;
+            text-align: center;
             cursor: pointer;
+            transition: color 0.5s ease-out;
 
-            &::before {
-                content: '';
-                position: absolute;
-                display: block;
-                width: 20px;
-                height: 5px;
-                border-radius: 30px;
-                background-color: $wrong;
-                left: 50%;
-                top: 50%;
-                transform: translate(-50%, -50%);
-                transition: background-color 0.2s ease-in-out;
+            &:hover {
+                color: $valid;
             }
+        }
 
-            &::after {
-                content: '';
-                position: absolute;
-                display: block;
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                background-color: $primary;
-                left: 0;
-                transition: left 0.2s ease-in-out;
-            }
+        &__label {
+            cursor: pointer;
+        }
 
-            &:checked {
+        &__input {
+            display: none;
+        }
 
-                &::after {
-                    left: 20px;
-                }
-
-                &::before {
-                    background-color: $valid;
-                }
-            }
+        &::before {
+            position: absolute;
+            content: '';
+            height: 100%;
+            border-radius: 4px;
+            background-color: rgba($primary, 0.5);
+            left: calc(v-bind('selected') * 100% / v-bind('selectionPossible.length'));
+            right: calc(100% - (v-bind('selected') + 1) * 100% / v-bind('selectionPossible.length'));
+            top: 0;
+            transition: 0.5s ease-in-out;
+            transition-property: left, right;
+            transition-delay: 0s, 100ms;
         }
     }
 }

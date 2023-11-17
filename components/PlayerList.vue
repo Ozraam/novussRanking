@@ -1,12 +1,8 @@
 <script setup lang="ts">
-const useEloMatchBased = ref(false)
+const rankingSystemIndex = ref(0)
 defineProps({
-    players: {
-        type: Array as PropType<{id: number, name: string, elo: number, numberOfMatchs: number, percentageOfMatchs: number}[] | null>,
-        required: true
-    },
-    players2: {
-        type: Array as PropType<{id: number, name: string, elo: number, numberOfMatchs: number, percentageOfMatchs: number}[] | null>,
+    rankingSystem: {
+        type: Array as PropType<Array<{id: number, name: string, elo: number, numberOfMatchs: number, percentageOfMatchs: number, eloDisplay: string}[] | null>>,
         required: true
     },
 })
@@ -22,7 +18,7 @@ defineProps({
             class="players"
         >
             <player-info
-                v-for="(player, index) in (useEloMatchBased ? players2 : players)"
+                v-for="(player, index) in rankingSystem[rankingSystemIndex]"
                 :key="player.id"
                 :player="player"
                 :rank="index + 1"
@@ -30,8 +26,8 @@ defineProps({
         </transition-group>
 
         <elo-system-switcher
-            :use-elo-match-based="useEloMatchBased"
-            @switch="useEloMatchBased = $event"
+            :selection-possible="['Elo', 'Match', 'Win']"
+            @switch="rankingSystemIndex = $event"
         />
     </div>
 </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 defineProps({
     player: {
-        type: Object as PropType<{id: number, name: string, elo:number, numberOfMatchs:number, percentageOfMatchs: number}>,
+        type: Object as PropType<{id: number, name: string, elo:number, numberOfMatchs:number, percentageOfMatchs: number, eloDisplay: string}>,
         required: true
     },
     rank: {
@@ -22,7 +22,7 @@ defineProps({
         </div>
 
         <div class="player-elo">
-            {{ player.elo }}
+            {{ player.eloDisplay }}
         </div>
     </li>
 </template>
