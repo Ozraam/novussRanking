@@ -11,7 +11,7 @@ const players3 : Ref<{id: number, name: string, elo:number, numberOfMatchs: numb
 const winnerChangeValue : Ref<undefined | number> = ref(undefined)
 const looserChangeValue : Ref<undefined | number> = ref(undefined)
 
-const matchs : Ref<{id: number, winner: number, looser: number, drunk: boolean}[] | null> = ref(null)
+const matchs : Ref<{id: number, winner: number, looser: number, drunk: boolean, created_at: string}[] | null> = ref(null)
 
 const rankingSystem = computed(() => [players.value, players2.value, players3.value])
 
@@ -174,6 +174,78 @@ const channels = sp.channel('custom-update-channel')
 onUnmounted(() => {
     channels.unsubscribe()
 })
+
+function computeDailyDataFromBeginin() {
+    console.clear()
+    const matchsByDay = matchs.value!.reduce((acc, match) => {
+        const date = new Date(match.created_at).toLocaleDateString()
+
+        if (!acc[date]) {
+            acc[date] = []
+        }
+        acc[date].push(match)
+        return acc
+    }, {} as Record<string, {id: number, winner: number, looser: number, drunk: boolean, created_at: string}[]>)
+
+    const newPlayers = players.value!.reduce((acc, player) => {
+        acc[player.id] = { elo: 500, numberOfWin: 0, numberOfLose: 0, id: player.id }
+        return acc
+    }, {} as Record<number, {elo: number, numberOfWin: number, numberOfLose: number, id: number}>)
+
+    const playersByDay = Object.entries(matchsByDay).sort(
+        (mA, mB) => new Date(mA[0]).getTime() - new Date(mB[0]).getTime()
+    ).reduce((acc, [date, matchs]) => {
+        console.log(date)
+
+        matchs.sort(
+            (mA, mB) => new Date(mA.created_at).getTime() - new Date(mB.created_at).getTime()
+        ).forEach((match) => {
+            console.log(match.created_at)
+
+            const winnerElo = newPlayers[match.winner].elo
+            const looserElo = newPlayers[match.looser].elo
+
+            const { winnerNewElo, looserNewElo } = calculateNewElo(winnerElo, looserElo, eloK)
+
+            newPlayers[match.winner].elo = Math.round(winnerNewElo)
+            newPlayers[match.looser].elo = Math.round(looserNewElo)
+
+            newPlayers[match.winner].numberOfWin += 1
+            newPlayers[match.looser].numberOfLose += 1
+        })
+
+        // copy the object newPlayers
+        acc[date] = Object.values(newPlayers).reduce((acc2, player) => {
+            acc2.push({ ...player })
+            return acc2
+        }, [] as {id: number, elo: number, numberOfWin: number, numberOfLose: number}[])
+
+        return acc
+    }, {} as Record<string, {id: number, elo: number, numberOfWin: number, numberOfLose: number}[]>)
+
+    sp.from('dailyStat').delete().neq('elo', '-10000').then(() => {
+        Object.entries(playersByDay).forEach(([date, players]) => {
+            players.forEach((player) => {
+                sp.from('dailyStat').insert(
+                    {
+                        date: new Date(date.split('/').reverse().join('-')),
+                        player: player.id,
+                        elo: player.elo,
+                        win: player.numberOfWin,
+                        lose: player.numberOfLose
+                    } as never
+                ).select().then(({ error }) => {
+                    console.log('done', date, player.id)
+                    if (error) {
+                        console.error(error)
+                    }
+                })
+            })
+        })
+
+        console.log('done')
+    })
+}
 </script>
 
 <template>
@@ -205,6 +277,10 @@ onUnmounted(() => {
 
         <button @click="recalculateElo">
             Recalculate elo
+        </button>
+
+        <button @click="computeDailyDataFromBeginin">
+            Compute daily data
         </button>
     </main>
 </template>
