@@ -23,6 +23,8 @@ function getWinRate(matchs: any, player: any, opponent:any) {
 
     return v
 }
+
+const showCharts = ref(false)
 </script>
 
 <template>
@@ -89,6 +91,20 @@ function getWinRate(matchs: any, player: any, opponent:any) {
                 </div>
             </li>
         </ul>
+
+        <div class="show-charts-container">
+            <button
+                class="show-charts"
+                @click="showCharts = !showCharts"
+            >
+                {{ showCharts ? 'Hide' : 'Show' }} charts
+            </button>
+        </div>
+
+        <player-charts
+            v-if="showCharts"
+            :player-id="player.id"
+        />
     </li>
 </template>
 
@@ -176,6 +192,26 @@ function getWinRate(matchs: any, player: any, opponent:any) {
             background-color: $wrong;
             z-index: -1;
         }
+    }
+}
+
+.show-charts {
+    &-container {
+        display: flex;
+        justify-content: center;
+        margin: 10px 0;
+    }
+
+    padding: 3px;
+    border-radius: 3px;
+    border: 1px solid $background;
+    background-color: $primary;
+    color: $background;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:active {
+        transform: scale(0.9);
     }
 }
 </style>

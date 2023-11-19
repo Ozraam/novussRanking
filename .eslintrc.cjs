@@ -39,9 +39,6 @@ module.exports = {
             maxEmptyLines: 0,
         }],
         'vue/comma-dangle': ['error', 'only-multiline'],
-        'vue/component-name-in-template-casing': ['error', 'kebab-case', {
-            registeredComponentsOnly: false,
-        }],
         'vue/html-indent': ['error', 4],
         'vue/key-spacing': ['error', {
             beforeColon: false,
