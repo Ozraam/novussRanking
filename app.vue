@@ -108,6 +108,9 @@ async function proccessMatch({ winner, looser } : { winner: Ref<number | null>, 
     ).then(() => {
         processing.value = false
         fetchPlayers()
+        setTimeout(() => {
+            computeDailyDataFromBeginin()
+        }, 10)
     })
 }
 
