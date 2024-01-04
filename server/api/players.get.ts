@@ -9,7 +9,10 @@ export default defineEventHandler(async (event) => {
     const players : Player[] | null = data
 
     if (error) {
-        console.error(error)
+        throw createError({
+            status: 500,
+            message: error.message,
+        })
     }
 
     const { data: matchData, error: matchError } = await sp.from('game').select('*').order('id')

@@ -4,14 +4,31 @@ const sp = useSupabaseClient()
 
 const eloK = 32
 
-const players : Ref<{id: number, name: string, elo:number, numberOfMatchs: number, percentageOfMatchs: number, eloDisplay: string}[] | null> = ref(null)
-const players2 : Ref<{id: number, name: string, elo:number, numberOfMatchs: number, percentageOfMatchs: number, eloDisplay: string}[] | null> = ref(null)
-const players3 : Ref<{id: number, name: string, elo:number, numberOfMatchs: number, percentageOfMatchs: number, eloDisplay: string}[] | null> = ref(null)
+type Player = {
+    id: number;
+    name: string;
+    elo: number;
+    numberOfMatchs: number;
+    percentageOfMatchs: number;
+    eloDisplay: string;
+};
+
+type Match = {
+    id: number;
+    winner: number;
+    looser: number;
+    drunk: boolean;
+    created_at: string;
+};
+
+const players : Ref<Player[] | null> = ref(null)
+const players2 : Ref<Player[] | null> = ref(null)
+const players3 : Ref<Player[] | null> = ref(null)
 
 const winnerChangeValue : Ref<undefined | number> = ref(undefined)
 const looserChangeValue : Ref<undefined | number> = ref(undefined)
 
-const matchs : Ref<{id: number, winner: number, looser: number, drunk: boolean, created_at: string}[] | null> = ref(null)
+const matchs : Ref<Match[] | null> = ref(null)
 
 const rankingSystem = computed(() => [players.value, players2.value, players3.value])
 
@@ -26,16 +43,6 @@ async function fetchPlayers() {
 }
 
 const processing = ref(false)
-
-function calculateNewElo(winnerElo: number, looserElo: number, eloK: number): { winnerNewElo: number, looserNewElo: number } {
-    const winnerExpectedScore = 1 / (1 + 10 ** ((looserElo - winnerElo) / 400))
-    const looserExpectedScore = 1 / (1 + 10 ** ((winnerElo - looserElo) / 400))
-
-    const winnerNewElo = winnerElo + eloK * (1 - winnerExpectedScore)
-    const looserNewElo = looserElo + eloK * (0 - looserExpectedScore)
-
-    return { winnerNewElo, looserNewElo }
-}
 
 async function proccessMatch({ winner, looser } : { winner: Ref<number | null>, looser: Ref<number | null> }) {
     if (!winner.value || !looser.value) {
@@ -70,7 +77,9 @@ async function proccessMatch({ winner, looser } : { winner: Ref<number | null>, 
     })
 }
 
-fetchPlayers()
+onMounted(() => {
+    fetchPlayers()
+})
 
 async function recalculateElo() {
     players.value = players.value!.map(p => ({ ...p, elo: 500 }))
@@ -107,102 +116,44 @@ async function recalculateElo() {
     fetchPlayers()
 }
 
-function calculateEloVariation({ winner, looser } : { winner: number | null, looser: number | null }) {
+function calculateNewElo(winnerElo: number, looserElo: number, eloK: number): { winnerNewElo: number, looserNewElo: number } {
+    const winnerExpectedScore = 1 / (1 + 10 ** ((looserElo - winnerElo) / 400))
+    const looserExpectedScore = 1 / (1 + 10 ** ((winnerElo - looserElo) / 400))
+
+    const winnerNewElo = winnerElo + eloK * (1 - winnerExpectedScore)
+    const looserNewElo = looserElo + eloK * (0 - looserExpectedScore)
+
+    return { winnerNewElo, looserNewElo }
+}
+
+async function calculateEloVariation({ winner, looser } : { winner: number | null, looser: number | null }) {
     if (!winner || !looser) {
         return
     }
-    const winnerElo = players.value?.find(p => p.id === winner)?.elo ?? 0
-    const looserElo = players.value?.find(p => p.id === looser)?.elo ?? 0
+    const winnerElo = players.value?.find(p => p.id === winner)
+    const looserElo = players.value?.find(p => p.id === looser)
 
-    const { winnerNewElo, looserNewElo } = calculateNewElo(winnerElo, looserElo, eloK)
+    const { data, error } = await useFetch('/api/elo', {
+        method: 'post',
+        body: JSON.stringify({
+            winner: winnerElo,
+            looser: looserElo
+        })
+    })
 
-    winnerChangeValue.value = Math.round(winnerNewElo - winnerElo)
-    looserChangeValue.value = Math.round(looserNewElo - looserElo)
+    if (error.value) {
+        winnerChangeValue.value = undefined
+        looserChangeValue.value = undefined
+        return
+    }
+
+    winnerChangeValue.value = Math.round(data.value?.winnerElo ?? 0)
+    looserChangeValue.value = Math.round(data.value?.looserElo ?? 0)
 }
 
-const channels = sp.channel('custom-update-channel')
-    .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'player' },
-        () => {
-            fetchPlayers()
-        }
-    )
-    .subscribe()
-
-onUnmounted(() => {
-    channels.unsubscribe()
-})
-
 function computeDailyDataFromBeginin() {
-    console.clear()
-    const matchsByDay = matchs.value!.reduce((acc, match) => {
-        const date = new Date(match.created_at).toLocaleDateString()
-
-        if (!acc[date]) {
-            acc[date] = []
-        }
-        acc[date].push(match)
-        return acc
-    }, {} as Record<string, {id: number, winner: number, looser: number, drunk: boolean, created_at: string}[]>)
-
-    const newPlayers = players.value!.reduce((acc, player) => {
-        acc[player.id] = { elo: 500, numberOfWin: 0, numberOfLose: 0, id: player.id }
-        return acc
-    }, {} as Record<number, {elo: number, numberOfWin: number, numberOfLose: number, id: number}>)
-
-    const playersByDay = Object.entries(matchsByDay).sort(
-        (mA, mB) => new Date(mA[0]).getTime() - new Date(mB[0]).getTime()
-    ).reduce((acc, [date, matchs]) => {
-        console.log(date)
-
-        matchs.sort(
-            (mA, mB) => new Date(mA.created_at).getTime() - new Date(mB.created_at).getTime()
-        ).forEach((match) => {
-            console.log(match.created_at)
-
-            const winnerElo = newPlayers[match.winner].elo
-            const looserElo = newPlayers[match.looser].elo
-
-            const { winnerNewElo, looserNewElo } = calculateNewElo(winnerElo, looserElo, eloK)
-
-            newPlayers[match.winner].elo = Math.round(winnerNewElo)
-            newPlayers[match.looser].elo = Math.round(looserNewElo)
-
-            newPlayers[match.winner].numberOfWin += 1
-            newPlayers[match.looser].numberOfLose += 1
-        })
-
-        // copy the object newPlayers
-        acc[date] = Object.values(newPlayers).reduce((acc2, player) => {
-            acc2.push({ ...player })
-            return acc2
-        }, [] as {id: number, elo: number, numberOfWin: number, numberOfLose: number}[])
-
-        return acc
-    }, {} as Record<string, {id: number, elo: number, numberOfWin: number, numberOfLose: number}[]>)
-
-    sp.from('dailyStat').delete().neq('elo', '-10000').then(() => {
-        Object.entries(playersByDay).forEach(([date, players]) => {
-            players.forEach((player) => {
-                sp.from('dailyStat').insert(
-                    {
-                        date: new Date(date.split('/').reverse().join('-')),
-                        player: player.id,
-                        elo: player.elo,
-                        win: player.numberOfWin,
-                        lose: player.numberOfLose
-                    } as never
-                ).select().then(({ error }) => {
-                    console.log('done', date, player.id)
-                    if (error) {
-                        console.error(error)
-                    }
-                })
-            })
-        })
-
-        console.log('done')
+    useFetch('/api/computeDailyData').then(() => {
+        fetchPlayers()
     })
 }
 </script>
