@@ -1,9 +1,5 @@
 <!-- eslint-disable no-console -->
 <script setup lang="ts">
-const sp = useSupabaseClient()
-
-const eloK = 32
-
 type Player = {
     id: number;
     name: string;
@@ -44,36 +40,25 @@ async function fetchPlayers() {
 
 const processing = ref(false)
 
-async function proccessMatch({ winner, looser } : { winner: Ref<number | null>, looser: Ref<number | null> }) {
+function proccessMatch({ winner, looser } : { winner: Ref<number | null>, looser: Ref<number | null> }) {
     if (!winner.value || !looser.value) {
         return
     }
 
     processing.value = true
-    await fetchPlayers()
-
-    const winnerElo = players.value?.find(p => p.id === winner.value)?.elo ?? 0
-    const looserElo = players.value?.find(p => p.id === looser.value)?.elo ?? 0
-
-    const { winnerNewElo, looserNewElo } = calculateNewElo(winnerElo, looserElo, eloK)
-
-    // Update players
-    await sp.from('player').update(
-        { elo: winnerNewElo.toFixed(0) } as never
-    ).eq('id', winner.value as never)
-
-    await sp.from('player').update(
-        { elo: looserNewElo.toFixed(0) } as never
-    ).eq('id', looser.value as never)
-
-    sp.from('game').insert(
-        { winner: winner.value, looser: looser.value, drunk: false } as never
-    ).then(() => {
+    useFetch('/api/match', {
+        method: 'post',
+        body: JSON.stringify({
+            winner: winner.value,
+            looser: looser.value
+        })
+    }).then(() => {
         processing.value = false
-        fetchPlayers()
-        setTimeout(() => {
-            computeDailyDataFromBeginin()
-        }, 10)
+        fetchPlayers().then(() => {
+            setTimeout(() => {
+                computeDailyDataFromBeginin()
+            }, 10)
+        })
     })
 }
 
@@ -85,16 +70,6 @@ async function recalculateElo() {
     await useFetch('/api/recalculateElo')
 
     fetchPlayers()
-}
-
-function calculateNewElo(winnerElo: number, looserElo: number, eloK: number): { winnerNewElo: number, looserNewElo: number } {
-    const winnerExpectedScore = 1 / (1 + 10 ** ((looserElo - winnerElo) / 400))
-    const looserExpectedScore = 1 / (1 + 10 ** ((winnerElo - looserElo) / 400))
-
-    const winnerNewElo = winnerElo + eloK * (1 - winnerExpectedScore)
-    const looserNewElo = looserElo + eloK * (0 - looserExpectedScore)
-
-    return { winnerNewElo, looserNewElo }
 }
 
 async function calculateEloVariation({ winner, looser } : { winner: number | null, looser: number | null }) {
