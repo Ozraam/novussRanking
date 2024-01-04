@@ -38,13 +38,9 @@ export default defineEventHandler(async (event) => {
     const playersByDay = Object.entries(matchsByDay).sort(
         (mA, mB) => new Date(mA[0]).getTime() - new Date(mB[0]).getTime()
     ).reduce((acc, [date, matchs]) => {
-        console.log(date)
-
         matchs.sort(
             (mA, mB) => new Date(mA.created_at).getTime() - new Date(mB.created_at).getTime()
         ).forEach((match) => {
-            console.log(match.created_at)
-
             const winnerElo = newPlayers[match.winner].elo
             const looserElo = newPlayers[match.looser].elo
 
@@ -78,14 +74,14 @@ export default defineEventHandler(async (event) => {
                         lose: player.numberOfLose
                     } as never
                 ).select().then(({ error }) => {
-                    console.log('done', date, player.id)
                     if (error) {
-                        console.error(error)
+                        throw createError({
+                            status: 500,
+                            message: error.message,
+                        })
                     }
                 })
             })
         })
-
-        console.log('done')
     })
 })

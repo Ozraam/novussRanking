@@ -50,6 +50,4 @@ export default defineEventHandler(async (event) => {
     await Promise.all(players!.map(p => sp.from('player').update(
         { elo: p.elo } as never
     ).eq('id', p.id as never)))
-
-    console.log('done updating elo')
 })
