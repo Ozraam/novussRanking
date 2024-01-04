@@ -1,4 +1,5 @@
 import { Match } from '../utils/types'
+import { eloK } from '../utils/elo'
 import { serverSupabaseClient } from '#supabase/server'
 
 export default defineEventHandler(async (event) => {
@@ -47,7 +48,7 @@ export default defineEventHandler(async (event) => {
             const winnerElo = newPlayers[match.winner].elo
             const looserElo = newPlayers[match.looser].elo
 
-            const { winnerNewElo, looserNewElo } = calculateNewElo(winnerElo, looserElo, 32)
+            const { winnerNewElo, looserNewElo } = calculateNewElo(winnerElo, looserElo, eloK)
 
             newPlayers[match.winner].elo = Math.round(winnerNewElo)
             newPlayers[match.looser].elo = Math.round(looserNewElo)

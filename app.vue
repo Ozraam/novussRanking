@@ -82,36 +82,7 @@ onMounted(() => {
 })
 
 async function recalculateElo() {
-    players.value = players.value!.map(p => ({ ...p, elo: 500 }))
-
-    // for each matchs update elo
-    matchs.value!.forEach((match) => {
-        const winnerElo = players.value?.find(p => p.id === match.winner)?.elo ?? 0
-        const looserElo = players.value?.find(p => p.id === match.looser)?.elo ?? 0
-
-        const winnerExpectedScore = 1 / (1 + 10 ** ((looserElo - winnerElo) / 400))
-        const looserExpectedScore = 1 / (1 + 10 ** ((winnerElo - looserElo) / 400))
-
-        const winnerNewElo = winnerElo + eloK * (1 - winnerExpectedScore)
-        const looserNewElo = looserElo + eloK * (0 - looserExpectedScore)
-
-        players.value = players.value!.map((p: any) => {
-            if (p.id === match.winner) {
-                return { ...p, elo: Math.round(winnerNewElo) }
-            }
-
-            if (p.id === match.looser) {
-                return { ...p, elo: Math.round(looserNewElo) }
-            }
-
-            return p
-        })
-    })
-
-    // Update players
-    await Promise.all(players.value!.map(p => sp.from('player').update(
-        { elo: p.elo } as never
-    ).eq('id', p.id as never)))
+    await useFetch('/api/recalculateElo')
 
     fetchPlayers()
 }

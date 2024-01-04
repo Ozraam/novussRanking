@@ -7,3 +7,5 @@ export function calculateNewElo(winnerElo: number, looserElo: number, eloK: numb
 
     return { winnerNewElo, looserNewElo }
 }
+
+export const eloK = 32
