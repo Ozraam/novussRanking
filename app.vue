@@ -105,49 +105,19 @@ function computeDailyDataFromBeginin() {
 </script>
 
 <template>
-    <main>
-        <h1>
-            Novuss Ranking
-        </h1>
+    <main class="dark:bg-gray-900 bg-white h-screen">
+        <NovussHeader />
 
-        <players-match-form
+        <PlayerList
             v-if="players"
-            :players="players"
-            :processing="processing"
-            :looser-change-value="looserChangeValue"
-            :winner-change-value="winnerChangeValue"
-            @update="fetchPlayers"
-            @process-match="proccessMatch"
-            @player-selected="calculateEloVariation"
+            :ranking-system="[players, players3]"
         />
 
-        <player-list
-            v-if="players"
-            :ranking-system="rankingSystem"
-        />
-
-        <players-stats
-            v-if="players && matchs"
-            :players="players"
-            :matchs="matchs"
-        />
-
-        <button @click="recalculateElo">
-            Recalculate elo
-        </button>
-
-        <button @click="computeDailyDataFromBeginin">
-            Compute daily data
-        </button>
+        <div class="w-full flex justify-center mt-4">
+            <UButton
+                label="Add Match"
+                size="md"
+            />
+        </div>
     </main>
 </template>
-
-<style scoped lang="scss">
-main {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  align-items: center;
-  padding-top: 2em;
-}
-</style>
