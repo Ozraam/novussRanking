@@ -1,5 +1,23 @@
 <script setup lang="ts">
 const isOpen = ref(false)
+
+const emit = defineEmits(['updateEloOrDailyData'])
+
+async function recalculateElo() {
+    await useFetch('/api/recalculateElo')
+
+    emit('updateEloOrDailyData')
+
+    isOpen.value = false
+}
+
+async function computeDailyDataFromBeginin() {
+    await useFetch('/api/computeDailyData')
+
+    emit('updateEloOrDailyData')
+
+    isOpen.value = false
+}
 </script>
 
 <template>
@@ -14,11 +32,11 @@ const isOpen = ref(false)
         />
 
         <USlideover v-model="isOpen">
-            <UCard>
+            <UCard :ui="{ rounded: '' }">
                 <template #header>
                     <div class="flex items-center justify-between">
                         <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-                            Slideover
+                            Option
                         </h3>
 
                         <UButton
@@ -27,6 +45,29 @@ const isOpen = ref(false)
                             icon="i-heroicons-x-mark-20-solid"
                             class="-my-1"
                             @click="isOpen = false"
+                        />
+                    </div>
+                </template>
+
+                <template #footer>
+                    <div class="flex">
+                        <UButton
+                            label="Recaculate Elo"
+                            variant="ghost"
+                            size="2xs"
+                            @click="recalculateElo"
+                        />
+
+                        <UDivider
+                            color="gray"
+                            orientation="vertical"
+                        />
+
+                        <UButton
+                            label="Compute Daily Data"
+                            variant="ghost"
+                            size="2xs"
+                            @click="computeDailyDataFromBeginin"
                         />
                     </div>
                 </template>
