@@ -1,108 +1,141 @@
 <script setup lang="ts">
-defineProps({
+const props = defineProps({
     players: {
         type: Array as PropType<{id: number, name: string, elo:number}[] | null>,
         required: true
     },
-    processing: {
-        type: Boolean,
-        required: true
-    },
-    winnerChangeValue: {
-        type: Number,
-        required: false,
-        default: undefined
-    },
-    looserChangeValue: {
-        type: Number,
-        required: false,
-        default: undefined
-    }
 })
-const emit = defineEmits(['update', 'process-match', 'player-selected'])
 
-const winner = ref(null)
-const looser = ref(null)
+const emit = defineEmits(['update'])
 
-function processMatch() {
-    emit('process-match', { winner, looser })
+const winner = ref(undefined)
+const looser = ref(undefined)
+
+const processing = ref(false)
+
+function proccessMatch() {
+    if (!winner.value || !looser.value) {
+        return
+    }
+
+    processing.value = true
+    useFetch('/api/match', {
+        method: 'post',
+        body: JSON.stringify({
+            winner: parseInt(winner.value),
+            looser: parseInt(looser.value)
+        })
+    }).then(() => {
+        processing.value = false
+        emit('update')
+        isOpen.value = false
+    })
 }
 
-watch([winner, looser], ([winnerValue, looserValue]) => {
-    emit('player-selected', { winner: winnerValue, looser: looserValue })
+const winnerChangeValue : Ref<Number | undefined> = ref(undefined)
+const looserChangeValue : Ref<Number | undefined> = ref(undefined)
+
+async function calculateEloVariation() {
+    if (!winner.value || !looser.value) {
+        return
+    }
+
+    const winnerElo = props.players?.find(p => p.id.toString() === winner.value)
+    const looserElo = props.players?.find(p => p.id.toString() === looser.value)
+
+    const { data, error } = await useFetch('/api/elo', {
+        method: 'post',
+        body: JSON.stringify({
+            winner: winnerElo,
+            looser: looserElo
+        })
+    })
+
+    if (error.value) {
+        winnerChangeValue.value = undefined
+        looserChangeValue.value = undefined
+        return
+    }
+
+    winnerChangeValue.value = Math.round(data.value?.winnerElo ?? 0)
+    looserChangeValue.value = Math.round(data.value?.looserElo ?? 0)
+}
+
+const isOpen = ref(false)
+
+const looserAllowed = computed(() => {
+    const winnerIdInt = Number(winner.value ?? -1)
+    return props.players?.filter(player => player.id !== winnerIdInt) ?? null
 })
 </script>
 
 <template>
-    <form
-        class="players-match-form"
-        @submit.prevent="processMatch"
-    >
-        <label for="winner">
-            Winner
-            <span
-                v-if="winnerChangeValue"
-                class="winner"
-            >
-                +{{ winnerChangeValue }}
-            </span>
-        </label>
+    <div class="w-full flex justify-center">
+        <UButton
+            label="Add Match"
+            size="md"
+            @click="isOpen = true"
+        />
 
-        <select
-            id="winner"
-            v-model="winner"
-            name="winner"
-            class="select-input"
+        <UModal
+            v-model="isOpen"
         >
-            <option
-                v-for="player in players"
-                :key="player.id"
-                :value="player.id"
-            >
-                {{ player.name }}
-            </option>
-        </select>
+            <UContainer class="p-4">
+                <h3 class="h1 mb-3">
+                    Add Match
+                </h3>
 
-        <label for="looser">
-            looser
-            <span
-                v-if="looserChangeValue"
-                class="looser"
-            >
-                {{ looserChangeValue }}
-            </span>
-        </label>
+                <form
+                    class="flex flex-col items-center gap-2 relative"
+                    @submit.prevent="proccessMatch"
+                >
+                    <UFormGroup>
+                        <USelect
+                            v-model="winner"
+                            :options="(players as unknown[])"
+                            option-attribute="name"
+                            value-attribute="id"
+                            @change="calculateEloVariation"
+                        />
 
-        <select
-            id="looser"
-            v-model="looser"
-            name="looser"
-            class="select-input"
-        >
-            <option
-                v-for="player in players?.filter(p => p.id !== winner)"
-                :key="player.id"
-                :value="player.id"
-            >
-                {{ player.name }}
-            </option>
-        </select>
+                        <template #label>
+                            Winner <span
+                                v-if="winnerChangeValue"
+                                class="text-green-500"
+                            >
+                                +{{ winnerChangeValue }}
+                            </span>
+                        </template>
+                    </UFormGroup>
 
-        <button
-            type="submit"
-            class="button"
-            :disabled="processing"
-        >
-            Submit
-        </button>
+                    <UFormGroup>
+                        <USelect
+                            v-model="looser"
+                            :options="(looserAllowed as unknown[])"
+                            option-attribute="name"
+                            value-attribute="id"
+                            @change="calculateEloVariation"
+                        />
 
-        <div
-            v-if="processing"
-            class="processing"
-        >
-            <!-- Processing... -->
-        </div>
-    </form>
+                        <template #label>
+                            Looser <span class="text-red-500">{{ looserChangeValue }}</span>
+                        </template>
+                    </UFormGroup>
+
+                    <UButton
+                        type="submit"
+                        label="Submit"
+                        :disabled="processing"
+                    />
+
+                    <UProgress
+                        v-if="processing"
+                        animation="carousel"
+                    />
+                </form>
+            </UContainer>
+        </UModal>
+    </div>
 </template>
 
 <style scoped lang="scss">
@@ -144,33 +177,6 @@ watch([winner, looser], ([winnerValue, looserValue]) => {
     &:active {
         background-color: $wrong;
         color: $background;
-    }
-}
-
-.processing {
-    position: absolute;
-    height: 20px;
-    width: 20px;
-    bottom: -25px;
-    left: 50%;
-    transform: translateX(-50%);
-    border-radius: 50%;
-    border: 2px dashed $wrong;
-    animation: pulse 1s infinite;
-    transform-origin: left;
-}
-
-@keyframes pulse {
-    0% {
-        transform: scale(0.8) rotate(0deg) translateX(-50%);
-    }
-
-    50% {
-        transform: scale(1) rotate(180deg) translateX(-50%);
-    }
-
-    100% {
-        transform: scale(0.8) rotate(360deg) translateX(-50%);
     }
 }
 </style>

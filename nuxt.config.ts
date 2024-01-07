@@ -4,6 +4,7 @@ export default defineNuxtConfig({
     modules: [
         '@nuxtjs/supabase',
         '@nuxtjs/eslint-module',
+        '@nuxt/ui',
     ],
 
     eslint: {
@@ -11,7 +12,7 @@ export default defineNuxtConfig({
     },
 
     css: [
-        '~/assets/scss/global.scss'
+
     ],
 
     supabase: {

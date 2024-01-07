@@ -1,47 +1,112 @@
-<script setup lang="ts">
-const rankingSystemIndex = ref(0)
-defineProps({
+<script setup>
+const props = defineProps({
     rankingSystem: {
-        type: Array as PropType<Array<{id: number, name: string, elo: number, numberOfMatchs: number, percentageOfMatchs: number, eloDisplay: string}[] | null>>,
+        type: Array,
         required: true
     },
+    matchs: {
+        type: Array,
+        required: true
+    }
 })
+
+const tabsItems = computed(() => {
+    return props.rankingSystem.map((ranking, index) => {
+        return {
+            label: index === 0 ? 'Elo' : 'Win Rate',
+            content: ranking.map((p, i) => {
+                return {
+                    rank: (i + 1) + '°',
+                    name: p.name,
+                    elo: p.eloDisplay,
+                    index: i,
+                    id: p.id,
+                }
+            }),
+            column: [
+                {
+                    label: 'Rank',
+                    key: 'rank',
+                },
+                {
+                    label: 'Name',
+                    key: 'name',
+                },
+                {
+                    label: 'Elo',
+                    key: 'elo',
+                },
+                {
+                    key: 'actions',
+                }
+            ]
+        }
+    })
+})
+
+const modalsOpen = ref(props.rankingSystem[0].map(() => false))
 </script>
 
 <template>
-    <div>
-        <h1>Players</h1>
+    <section class="p-2">
+        <h2 class="mb-3">
+            Players Rank
+        </h2>
 
-        <transition-group
-            name="list"
-            tag="ul"
-            class="players"
-        >
-            <player-info
-                v-for="(player, index) in rankingSystem[rankingSystemIndex]"
-                :key="player.id"
-                :player="player"
-                :rank="index + 1"
-            />
-        </transition-group>
+        <UTabs :items="tabsItems">
+            <template #item="{ item }">
+                <UTable
+                    :rows="item.content"
+                    :columns="item.column"
+                >
+                    <template #actions-data="{ row }">
+                        <UButton
+                            label="Stats"
+                            size="xs"
+                            @click="modalsOpen[row.index] = true;"
+                        />
 
-        <elo-system-switcher
-            :selection-possible="['Elo', 'Match', 'Win']"
-            @switch="rankingSystemIndex = $event"
-        />
-    </div>
+                        <UModal
+                            v-model="modalsOpen[row.index]"
+                            fullscreen
+                            :ui="{
+                                inner: 'overflow-auto',
+                                container: 'overflow-auto',
+                                base: 'overflow-auto',
+                            }"
+                        >
+                            <UCard
+                                :ui="{
+                                    rounded: '',
+                                    base: 'overflow-auto'
+                                }"
+                            >
+                                <template #header>
+                                    <div class="flex justify-between">
+                                        <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+                                            {{ row.name }} Stats
+                                        </h3>
+
+                                        <UButton
+                                            color="gray"
+                                            variant="ghost"
+                                            icon="i-heroicons-x-mark-20-solid"
+                                            class="-my-1"
+                                            @click="modalsOpen[row.index] = false"
+                                        />
+                                    </div>
+                                </template>
+
+                                <PlayerStats
+                                    :players="props.rankingSystem[0]"
+                                    :matchs="matchs.filter(m => m.winner === row.id || m.looser === row.id)"
+                                    :player="row"
+                                />
+                            </UCard>
+                        </UModal>
+                    </template>
+                </UTable>
+            </template>
+        </UTabs>
+    </section>
 </template>
-
-<style lang="scss">
-.players {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-}
-
-.list-move {
-  transition: transform 0.5s ease-out;
-}
-</style>
