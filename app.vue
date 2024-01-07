@@ -1,5 +1,15 @@
 <!-- eslint-disable no-console -->
 <script setup lang="ts">
+useHead({
+    bodyAttrs: {
+        class: 'dark:bg-gray-900 bg-white'
+    }
+})
+
+useSeoMeta({
+    title: 'Novuss Ranking',
+})
+
 type Player = {
     id: number;
     name: string;
@@ -28,6 +38,7 @@ async function fetchPlayers() {
     matchs.value = matchsA.value?.matchs ?? null
 
     const { data: playersArrays } = await useFetch('/api/players')
+
     players.value = playersArrays.value?.players ?? null
     players2.value = playersArrays.value?.players2 ?? null
     players3.value = playersArrays.value?.players3 ?? null
@@ -53,6 +64,7 @@ function computeDailyDataFromBeginin() {
         <PlayerList
             v-if="players"
             :ranking-system="[players, players3]"
+            :matchs="matchs ?? []"
         />
 
         <PlayersMatchForm
@@ -61,9 +73,3 @@ function computeDailyDataFromBeginin() {
         />
     </main>
 </template>
-
-<style>
-html {
-    background-color: #0F172A;
-}
-</style>

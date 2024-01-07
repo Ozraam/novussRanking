@@ -4,6 +4,10 @@ const props = defineProps({
         type: Array,
         required: true
     },
+    matchs: {
+        type: Array,
+        required: true
+    }
 })
 
 const tabsItems = computed(() => {
@@ -15,6 +19,7 @@ const tabsItems = computed(() => {
                     rank: (i + 1) + '°',
                     name: p.name,
                     elo: p.eloDisplay,
+                    index: i,
                     id: p.id,
                 }
             }),
@@ -38,6 +43,8 @@ const tabsItems = computed(() => {
         }
     })
 })
+
+const modalsOpen = ref(props.rankingSystem[0].map(() => false))
 </script>
 
 <template>
@@ -56,8 +63,47 @@ const tabsItems = computed(() => {
                         <UButton
                             label="Stats"
                             size="xs"
-                            @click="console.log(row)"
+                            @click="modalsOpen[row.index] = true;"
                         />
+
+                        <UModal
+                            v-model="modalsOpen[row.index]"
+                            fullscreen
+                            :ui="{
+                                inner: 'overflow-auto',
+                                container: 'overflow-auto',
+                                base: 'overflow-auto',
+                            }"
+                        >
+                            <UCard
+                                :ui="{
+                                    rounded: '',
+                                    base: 'overflow-auto'
+                                }"
+                            >
+                                <template #header>
+                                    <div class="flex justify-between">
+                                        <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+                                            {{ row.name }} Stats
+                                        </h3>
+
+                                        <UButton
+                                            color="gray"
+                                            variant="ghost"
+                                            icon="i-heroicons-x-mark-20-solid"
+                                            class="-my-1"
+                                            @click="modalsOpen[row.index] = false"
+                                        />
+                                    </div>
+                                </template>
+
+                                <PlayerStats
+                                    :players="props.rankingSystem[0]"
+                                    :matchs="matchs.filter(m => m.winner === row.id || m.looser === row.id)"
+                                    :player="row"
+                                />
+                            </UCard>
+                        </UModal>
                     </template>
                 </UTable>
             </template>

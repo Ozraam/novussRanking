@@ -23,67 +23,51 @@ function getWinRate(matchs: any, player: any, opponent:any) {
 
     return v
 }
-
-const showCharts = ref(false)
 </script>
 
 <template>
-    <li class="player-stats">
-        <h3>
-            {{ player.name }}
-        </h3>
-
-        <ul class="player-stats-matchs">
+    <div>
+        <ul class="grid grid-cols-3 gap-10 mb-4">
             <li
                 v-for="opponent in players.filter(p => p.id != player.id)"
                 :key="opponent.id"
-                class="player-stats-matchs-match"
             >
-                <h5>
-                    {{ opponent.name }}
-                </h5>
-
-                <!-- <ul>
-                    <li>
-                        <strong>Wins:</strong> {{ matchs.filter(m => m.winner === player.id && m.looser === opponent.id).length }}
-                    </li>
-
-                    <li>
-                        <strong>Losses:</strong> {{ matchs.filter(m => m.winner === opponent.id && m.looser === player.id).length }}
-                    </li>
-                </ul> -->
-                <div class="victory-bars">
+                <div class="flex victory-bars">
                     <div
-                        class="loss-bar"
+                        class="loss-bar h-full flex items-end pl-2"
                         :style="{ '--loss-left': (100 - getWinRate(matchs, player, opponent)) + '%' }"
                     >
                         {{ matchs.filter(m => m.winner === opponent.id && m.looser === player.id).length }}
                     </div>
 
                     <div
-                        class="win-bar"
+                        class="win-bar h-full flex items-end justify-end pr-2 text-gray-900 dark:font-semibold"
                         :style="{ '--win-right': getWinRate(matchs, player, opponent) + '%' }"
                     >
                         {{ matchs.filter(m => m.winner === player.id && m.looser === opponent.id).length }}
                     </div>
                 </div>
+
+                <h5 class="w-full text-center">
+                    {{ opponent.name }}
+                </h5>
             </li>
 
-            <li class="player-stats-matchs-match">
+            <li>
                 <h5>
                     Total
                 </h5>
 
-                <div class="victory-bars">
+                <div class="flex victory-bars">
                     <div
-                        class="loss-bar"
+                        class="loss-bar h-full flex items-end pl-2"
                         :style="{ '--loss-left': (100 - getWinRate(matchs, player, { id: -1 })) + '%' }"
                     >
                         {{ matchs.filter(m => m.looser === player.id).length }}
                     </div>
 
                     <div
-                        class="win-bar"
+                        class="win-bar h-full flex items-end justify-end pr-2 text-gray-900 dark:font-semibold"
                         :style="{ '--win-right': getWinRate(matchs, player, { id: -1 }) + '%' }"
                     >
                         {{ matchs.filter(m => m.winner === player.id).length }}
@@ -92,54 +76,18 @@ const showCharts = ref(false)
             </li>
         </ul>
 
-        <div class="show-charts-container">
-            <button
-                class="show-charts"
-                @click="showCharts = !showCharts"
-            >
-                {{ showCharts ? 'Hide' : 'Show' }} charts
-            </button>
-        </div>
-
         <player-charts
-            v-if="showCharts"
+            class="dark:bg-white p-2 pt-0 rounded"
             :player-id="player.id"
         />
-    </li>
+    </div>
 </template>
 
 <style scoped lang="scss">
-.player-stats {
-
-    background-color: $primary;
-    border: 2px solid $secondary;
-    border-radius: 10px;
-    color: $background;
-    padding: 10px;
-
-    &-matchs {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        gap: 10px;
-        width: 100%;
-
-        &-match {
-            min-width: 40%;
-            text-align: center;
-            border: 1px solid $background;
-            padding: 3px;
-            border-radius: 3px;
-        }
-    }
-}
-
 .victory-bars {
-    display: flex;
-    justify-content: space-between;
     position: relative;
     width: 100%;
-    height: 1em;
+    height: 4em;
 
     &::after {
         content: '';
@@ -163,11 +111,10 @@ const showCharts = ref(false)
         &::before {
             content: '';
             position: absolute;
-            height: 100%;
             left: 0;
-            top: 0;
+            top: var(--win-right);
             bottom: 0;
-            right: var(--win-right);
+            right: 0;
             background-color: $valid;
             z-index: -1;
         }
@@ -184,9 +131,8 @@ const showCharts = ref(false)
         &::before {
             content: "";
             position: absolute;
-            left: var(--loss-left);
-            height: 100%;
-            top: 0;
+            top: var(--loss-left);
+            left: 0;
             bottom: 0;
             right: 0;
             background-color: $wrong;

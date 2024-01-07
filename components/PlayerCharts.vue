@@ -106,7 +106,9 @@ sp.from('dailyStat').select('*').eq('player', props.playerId).then(({ data: dail
 
 <template>
     <div>
-        <h3>Player Charts</h3>
+        <h3 class="text-gray-900 text-lg">
+            Player Charts
+        </h3>
 
         <Line
             v-if="loaded"
