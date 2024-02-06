@@ -1,4 +1,4 @@
-import { Match } from '../utils/types'
+import { Match, PlayerDaily } from '../utils/types'
 import { eloK } from '../utils/elo'
 import { serverSupabaseClient } from '#supabase/server'
 
@@ -7,11 +7,11 @@ export default defineEventHandler(async (event) => {
 
     const { data: matchData } = await sp.from('game').select('*').order('id')
 
-    const matchs : Match[] | null = matchData
+    const matchs: Match[] | null = matchData
 
     const { data, error } = await sp.from('player').select('*').order('elo', { ascending: false })
 
-    const players : Player[] | null = data
+    const players: Player[] | null = data
 
     if (error) {
         throw createError({
@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const matchsByDay = matchs!.reduce((acc, match) => {
-        const date = new Date(match.created_at).toLocaleDateString()
+        const date = new Date(match.created_at).toLocaleDateString('fr-FR')
 
         if (!acc[date]) {
             acc[date] = []
@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
     const newPlayers = players!.reduce((acc, player) => {
         acc[player.id] = { elo: 500, numberOfWin: 0, numberOfLose: 0, id: player.id }
         return acc
-    }, {} as Record<number, {elo: number, numberOfWin: number, numberOfLose: number, id: number}>)
+    }, {} as Record<number, { elo: number, numberOfWin: number, numberOfLose: number, id: number }>)
 
     const playersByDay = Object.entries(matchsByDay).sort(
         (mA, mB) => new Date(mA[0]).getTime() - new Date(mB[0]).getTime()
@@ -54,13 +54,13 @@ export default defineEventHandler(async (event) => {
         })
 
         // copy the object newPlayers
-        acc[date] = Object.values(newPlayers).reduce((acc2: Player[], player: Player) => {
+        acc[date] = Object.values(newPlayers).reduce((acc2: PlayerDaily[], player: PlayerDaily) => {
             acc2.push({ ...player })
             return acc2
-        }, [] as {id: number, elo: number, numberOfWin: number, numberOfLose: number}[])
+        }, [] as PlayerDaily[])
 
         return acc
-    }, {} as Record<string, {id: number, elo: number, numberOfWin: number, numberOfLose: number}[]>)
+    }, {} as Record<string, { id: number, elo: number, numberOfWin: number, numberOfLose: number }[]>)
 
     sp.from('dailyStat').delete().neq('elo', '-10000').then(() => {
         Object.entries(playersByDay).forEach(([date, players]) => {

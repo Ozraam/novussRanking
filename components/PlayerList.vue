@@ -4,10 +4,6 @@ const props = defineProps({
         type: Array,
         required: true
     },
-    matchs: {
-        type: Array,
-        required: true
-    }
 })
 
 const tabsItems = computed(() => {
@@ -99,7 +95,6 @@ const modalsOpen = ref(props.rankingSystem[0].map(() => false))
 
                                 <PlayerStats
                                     :players="props.rankingSystem[0]"
-                                    :matchs="matchs.filter(m => m.winner === row.id || m.looser === row.id)"
                                     :player="row"
                                 />
                             </UCard>
