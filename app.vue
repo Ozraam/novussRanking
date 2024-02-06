@@ -8,6 +8,7 @@ useHead({
 
 useSeoMeta({
     title: 'Novuss Ranking',
+    description: 'Novuss Ranking for lieapaja french students',
 })
 
 type Player = {
@@ -19,24 +20,11 @@ type Player = {
     eloDisplay: string;
 };
 
-type Match = {
-    id: number;
-    winner: number;
-    looser: number;
-    drunk: boolean;
-    created_at: string;
-};
-
 const players : Ref<Player[] | null> = ref(null)
 const players2 : Ref<Player[] | null> = ref(null)
 const players3 : Ref<Player[] | null> = ref(null)
 
-const matchs : Ref<Match[] | null> = ref(null)
-
 async function fetchPlayers() {
-    const { data: matchsA } = await useFetch('/api/match', { method: 'get' })
-    matchs.value = matchsA.value?.matchs ?? null
-
     const { data: playersArrays } = await useFetch('/api/players')
 
     players.value = playersArrays.value?.players ?? null
@@ -64,7 +52,6 @@ function computeDailyDataFromBeginin() {
         <PlayerList
             v-if="players"
             :ranking-system="[players, players3]"
-            :matchs="matchs ?? []"
         />
 
         <PlayersMatchForm

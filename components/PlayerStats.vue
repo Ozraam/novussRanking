@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps({
+const props = defineProps({
     player: {
         type: Object as PropType<{id: number, name: string, elo:number}>,
         required: true
@@ -8,71 +8,66 @@ defineProps({
         type: Object as PropType<{id: number, name: string, elo:number}[]>,
         required: true
     },
-    matchs: {
-        type: Array as PropType<{id: number, winner: number, looser: number, drunk: boolean}[]>,
-        required: true
-    }
 })
 
-function getWinRate(matchs: any, player: any, opponent:any) {
-    const v = 100 - (
-        (
-            matchs.filter((m:any) => m.winner === player.id && (m.looser === opponent.id || opponent.id === -1)).length / (matchs.filter((m:any) => (m.winner === player.id && (m.looser === opponent.id || opponent.id === -1)) || ((m.winner === opponent.id || opponent.id === -1) && m.looser === player.id)).length)
-        ) *
-        100)
+function getWinRate(opponent: {id: number, victories: number, defeats: number, total: number, name: String}) {
+    const v = opponent.total > 0 ? 100 - (opponent.victories / opponent.total) * 100 : 0
 
     return v
 }
+
+const opponentsStats = ref<{
+    id: number;
+    victories: number;
+    defeats: number;
+    total: number;
+    name: string;
+}[]>([])
+
+onMounted(() => {
+    useFetch('/api/stats', {
+        query: {
+            id: props.player.id
+        }
+    }).then(({ data, error }) => {
+        if (error.value) {
+            console.log('hauoghao')
+
+            console.log(error.value)
+            // TODO : handle error with toast
+        } else {
+            opponentsStats.value = data.value!.opponentsStats
+        }
+    })
+})
 </script>
 
 <template>
     <div>
         <ul class="grid grid-cols-3 gap-10 mb-4">
             <li
-                v-for="opponent in players.filter(p => p.id != player.id)"
+                v-for="opponent in opponentsStats"
                 :key="opponent.id"
             >
                 <div class="flex victory-bars">
                     <div
                         class="loss-bar h-full flex items-end pl-2"
-                        :style="{ '--loss-left': (100 - getWinRate(matchs, player, opponent)) + '%' }"
+                        :style="{ '--loss-left': (100 - getWinRate(opponent)) + '%' }"
                     >
-                        {{ matchs.filter(m => m.winner === opponent.id && m.looser === player.id).length }}
+                        {{ opponent.defeats }}
                     </div>
 
                     <div
                         class="win-bar h-full flex items-end justify-end pr-2 text-gray-900 dark:font-semibold"
-                        :style="{ '--win-right': getWinRate(matchs, player, opponent) + '%' }"
+                        :style="{ '--win-right': getWinRate(opponent) + '%' }"
                     >
-                        {{ matchs.filter(m => m.winner === player.id && m.looser === opponent.id).length }}
+                        {{ opponent.victories }}
                     </div>
                 </div>
 
                 <h5 class="w-full text-center">
                     {{ opponent.name }}
                 </h5>
-            </li>
-
-            <li>
-                <h5>
-                    Total
-                </h5>
-
-                <div class="flex victory-bars">
-                    <div
-                        class="loss-bar h-full flex items-end pl-2"
-                        :style="{ '--loss-left': (100 - getWinRate(matchs, player, { id: -1 })) + '%' }"
-                    >
-                        {{ matchs.filter(m => m.looser === player.id).length }}
-                    </div>
-
-                    <div
-                        class="win-bar h-full flex items-end justify-end pr-2 text-gray-900 dark:font-semibold"
-                        :style="{ '--win-right': getWinRate(matchs, player, { id: -1 }) + '%' }"
-                    >
-                        {{ matchs.filter(m => m.winner === player.id).length }}
-                    </div>
-                </div>
             </li>
         </ul>
 
