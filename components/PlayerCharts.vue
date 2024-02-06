@@ -35,16 +35,6 @@ const dataElo : Ref<any> = ref({})
 const dataWin : Ref<any> = ref({})
 const dataWinrate : Ref<any> = ref({})
 const loaded = ref(false)
-// {
-//     labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
-//     datasets: [
-//         {
-//             label: 'Data One',
-//             backgroundColor: '#f87979',
-//             data: [40, 39, 10, 40, 39, 80, 40]
-//         }
-//     ]
-// }
 
 sp.from('dailyStat').select('*').eq('player', props.playerId).then(({ data: dailyStats }) => {
     if (!dailyStats) { return }
